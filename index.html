@@ -6,11 +6,10 @@
   <title>JEE 2027 Countdown — Live Wallpaper</title>
 
   <!--
-    JEE 2027 Countdown Live Wallpaper
-    - Single-file HTML/CSS/JS (no external assets)
-    - Designed for live wallpaper tools (Lively, Wallpaper Engine)
-    - Target: 25 Jan 2027, 09:00 AM IST (India Standard Time)
-      -> Converted to UTC: 2027-01-25 03:30:00 UTC (used in JS)
+    JEE 2027 Countdown Live Wallpaper (single-file)
+    - Mouse-interactive animated background (particles respond to cursor)
+    - Target: 20 Jan 2027, 09:00 AM IST (converted to UTC in JS)
+    - No external assets or libraries
   -->
 
   <style>
@@ -20,12 +19,10 @@
     :root{
       --bg1: #030416;
       --bg2: #05102a;
-      --accent: #7df9ff;       /* cyan neon */
-      --accent-2: #7a5cff;     /* purple neon */
+      --accent: #7df9ff;
+      --accent-2: #7a5cff;
       --glass: rgba(255,255,255,0.04);
-      --glass-2: rgba(255,255,255,0.02);
       --glass-border: rgba(255,255,255,0.06);
-      --glass-glow: rgba(124,92,255,0.12);
       --text: #e6f7ff;
       --muted: rgba(230,247,255,0.6);
       --shadow: 0 10px 30px rgba(2,6,23,0.6);
@@ -42,7 +39,7 @@
       font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
       -webkit-font-smoothing:antialiased;
       -moz-osx-font-smoothing:grayscale;
-      overflow:hidden; /* full-bleed wallpaper */
+      overflow:hidden;
     }
 
     /* Centering container */
@@ -57,7 +54,6 @@
       gap:28px;
       padding:clamp(18px, 3vw, 48px);
       text-align:center;
-      /* subtle entrance */
       opacity:0;
       transform:translateY(10px);
       animation:fadeInUp 900ms ease-out forwards;
@@ -204,12 +200,6 @@
       margin-top:6px;
     }
 
-    /* Responsive sizing for cards on wide screens */
-    @media (min-width:1400px){
-      .card{ width:170px; padding:24px; border-radius:16px;}
-      .number{font-size:54px}
-    }
-
     /* Canvas layer for particles sits behind content */
     canvas#particles {
       position:fixed;
@@ -273,7 +263,7 @@
       <span style="opacity:0.18">•</span>
       <span>Stay Focused</span>
       <span style="opacity:0.18">•</span>
-      <span>IIT Dream 🚀</span>
+      <span>IIT Dream</span>
     </div>
 
     <!-- Countdown boxes -->
@@ -296,43 +286,34 @@
       </div>
     </section>
 
-    <div class="target">Target: 25 Jan 2027 — 09:00 AM IST</div>
+    <div class="target">Target: 20 Jan 2027 — 09:00 AM IST</div>
     <div class="hint">Tip: Use as a live wallpaper (Lively/Wallpaper Engine). Animation starts automatically.</div>
   </main>
 
   <script>
   /************************************************************************
-   * JEE 2027 Countdown — JavaScript
+   * JEE 2027 Countdown + Mouse-Interactive Particle Background
    * - Single-file vanilla JS
-   * - Updates every second
-   * - Target is Jan 25, 2027 09:00 IST (UTC+5:30)
-   *   Converted to UTC: 2027-01-25 03:30:00 UTC -> used with Date.UTC for precision
+   * - Target: Jan 20, 2027 09:00 IST (Date.UTC used for precision)
+   * - Particles respond to mouse/touch: subtle repulsion + glowing cursor
    ************************************************************************/
 
   (function(){
     // ---------- Configuration ----------
-    // Target moment in UTC (converted from IST 2027-01-25 09:00 IST)
-    // Date.UTC(year, monthIndex(0-11), day, hourUTC, minute, second)
-    const TARGET_UTC_MS = Date.UTC(2027, 0, 25, 3, 30, 0); // 2027-01-25 03:30:00 UTC
-
-    // DOM references
+    // TARGET: 20 Jan 2027, 09:00 IST -> UTC = 2027-01-20 03:30:00 UTC
+    const TARGET_UTC_MS = Date.UTC(2027, 0, 20, 3, 30, 0); // 2027-01-20 03:30:00 UTC (09:00 IST)
     const elDays = document.getElementById('days');
     const elHours = document.getElementById('hours');
     const elMinutes = document.getElementById('minutes');
     const elSeconds = document.getElementById('seconds');
     const cards = document.querySelectorAll('.card');
-
-    // Keep previous values to trigger small pop when changed
     let prev = { days: null, hours: null, minutes: null, seconds: null };
 
-    // Utility: pad number to at least 2 digits
     function pad(n){ return String(n).padStart(2,'0'); }
-
-    // Compute remaining time (in days/hours/minutes/seconds)
     function computeRemaining(nowMs){
       const diff = TARGET_UTC_MS - nowMs;
       if (diff <= 0) return { days:0, hours:0, minutes:0, seconds:0, expired:true };
-      let remaining = diff / 1000; // seconds
+      let remaining = diff / 1000;
       const days = Math.floor(remaining / 86400);
       remaining -= days * 86400;
       const hours = Math.floor(remaining / 3600);
@@ -342,43 +323,31 @@
       return { days, hours, minutes, seconds, expired:false };
     }
 
-    // Update DOM and animate changes
-    function updateCountdown(){
-      const nowMs = Date.now();
-      const { days, hours, minutes, seconds, expired } = computeRemaining(nowMs);
-
-      // update each field if changed
-      setField('days', days, elDays);
-      setField('hours', pad(hours), elHours);
-      setField('minutes', pad(minutes), elMinutes);
-      setField('seconds', pad(seconds), elSeconds);
-
-      if (expired) {
-        // When expired, keep showing zeros and optionally show a message (non-intrusive)
-        // We could flash or show "Exam Day!" — but as wallpaper keep it subtle.
-        // For accessibility, update title once:
-        document.title = "JEE 2027 — It's Time!";
-      } else {
-        document.title = `JEE 2027 — ${days}d ${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
-      }
-    }
-
-    // Set a field and add pop animation if value changed
     function setField(key, value, element){
       const newVal = (typeof value === 'number') ? String(value) : value;
       if (prev[key] !== newVal){
-        // Add quick pop animation
         element.classList.add('pop');
-        // Remove the class after animation frame to allow re-triggering next changes
         window.setTimeout(()=> element.classList.remove('pop'), 220);
         element.textContent = newVal;
         prev[key] = newVal;
       }
     }
 
-    // Kick things off: initial update and interval
+    function updateCountdown(){
+      const nowMs = Date.now();
+      const { days, hours, minutes, seconds, expired } = computeRemaining(nowMs);
+      setField('days', days, elDays);
+      setField('hours', pad(hours), elHours);
+      setField('minutes', pad(minutes), elMinutes);
+      setField('seconds', pad(seconds), elSeconds);
+      if (expired) {
+        document.title = "JEE 2027 — It's Time!";
+      } else {
+        document.title = `JEE 2027 — ${days}d ${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
+      }
+    }
+
     updateCountdown();
-    // Update every second on the second boundary for better sync
     const msTillNextSecond = 1000 - (Date.now() % 1000);
     setTimeout(function(){
       updateCountdown();
@@ -386,15 +355,23 @@
     }, msTillNextSecond);
 
     // -------------------------
-    // Background particle system
+    // Particle system with mouse interaction
     // -------------------------
-    // Lightweight, optimized to be wallpaper-friendly.
     const canvas = document.getElementById('particles');
     const ctx = canvas.getContext('2d', { alpha: true });
-
-    let DPR = Math.min(window.devicePixelRatio || 1, 2); // limit DPR to 2 for performance
+    let DPR = Math.min(window.devicePixelRatio || 1, 2);
     let particles = [];
-    const PARTICLE_COUNT_BASE = 40; // base count, scales with area
+    const PARTICLE_COUNT_BASE = 40;
+
+    // Mouse/touch influence object
+    const pointer = {
+      x: -9999, y: -9999,
+      px: -9999, py: -9999,
+      vx: 0, vy: 0,
+      active: false,
+      radius: 160,
+      strength: 0.9
+    };
 
     function resizeCanvas(){
       DPR = Math.min(window.devicePixelRatio || 1, 2);
@@ -403,54 +380,110 @@
       canvas.style.width = innerWidth + 'px';
       canvas.style.height = innerHeight + 'px';
       ctx.setTransform(DPR,0,0,DPR,0,0);
-      initParticles(); // regenerate based on size
+      initParticles();
     }
     window.addEventListener('resize', resizeCanvas, { passive:true });
 
     function initParticles(){
       particles = [];
       const area = innerWidth * innerHeight;
-      // scale particle count with screen area
-      const count = Math.round(PARTICLE_COUNT_BASE * (area / (1366*768)));
+      const count = Math.max(18, Math.round(PARTICLE_COUNT_BASE * (area / (1366*768))));
       for (let i=0;i<count;i++){
         particles.push({
           x: Math.random() * innerWidth,
           y: Math.random() * innerHeight,
           size: (Math.random()*1.6 + 0.6) * (innerWidth > 3000 ? 1.6 : 1),
-          vx: (Math.random()-0.5) * 0.2, // slow drift
+          vx: (Math.random()-0.5) * 0.2,
           vy: (Math.random()-0.5) * 0.2,
-          hue: 200 + Math.random()*120, // bluish-purples
-          alpha: 0.1 + Math.random()*0.35
+          hue: 200 + Math.random()*120,
+          alpha: 0.08 + Math.random()*0.3,
+          baseAlpha: 0.08 + Math.random()*0.3
         });
       }
     }
+
+    function setPointer(x,y){
+      pointer.px = pointer.x;
+      pointer.py = pointer.y;
+      pointer.x = x;
+      pointer.y = y;
+      pointer.vx = (pointer.x - pointer.px);
+      pointer.vy = (pointer.y - pointer.py);
+      pointer.active = true;
+    }
+    function clearPointer(){
+      pointer.active = false;
+    }
+
+    window.addEventListener('mousemove', (e) => {
+      setPointer(e.clientX, e.clientY);
+    }, { passive:true });
+    window.addEventListener('mousedown', (e) => {
+      setPointer(e.clientX, e.clientY);
+    }, { passive:true });
+    window.addEventListener('mouseleave', () => {
+      clearPointer();
+    }, { passive:true });
+    window.addEventListener('touchstart', (e) => {
+      const t = e.touches[0];
+      if (t) setPointer(t.clientX, t.clientY);
+    }, { passive:true });
+    window.addEventListener('touchmove', (e) => {
+      const t = e.touches[0];
+      if (t) setPointer(t.clientX, t.clientY);
+    }, { passive:true });
+    window.addEventListener('touchend', () => {
+      clearPointer();
+    }, { passive:true });
 
     let lastT = performance.now();
     function drawParticles(t){
       const dt = Math.min(32, t - lastT);
       lastT = t;
-      // subtle motion: clear with a low-opacity rect for trailing effect
+
       ctx.clearRect(0,0,innerWidth,innerHeight);
 
-      // draw gentle vignette glow for depth
+      // background vignette for depth
       const g = ctx.createRadialGradient(innerWidth*0.2, innerHeight*0.15, 0, innerWidth*0.2, innerHeight*0.15, innerWidth);
       g.addColorStop(0, 'rgba(20,40,80,0.06)');
       g.addColorStop(1, 'rgba(0,0,0,0)');
       ctx.fillStyle = g;
       ctx.fillRect(0,0,innerWidth,innerHeight);
 
+      const influenceRadius = pointer.radius * (innerWidth / 1366);
+
       for (let p of particles){
-        // Move using tiny velocities and a slow sinusoidal drift for life-like motion
+        // subtle ambient motion
         p.x += p.vx * (dt * 0.06) + Math.sin((t + p.x*10) * 0.0002) * 0.05;
         p.y += p.vy * (dt * 0.06) + Math.cos((t + p.y*7) * 0.00019) * 0.05;
 
-        // wrap edges
+        // pointer interaction: repulse particles within radius, with a falloff
+        if (pointer.active){
+          const dx = p.x - pointer.x;
+          const dy = p.y - pointer.y;
+          const dist = Math.sqrt(dx*dx + dy*dy);
+          if (dist < influenceRadius && dist > 0.001){
+            const nx = dx / dist;
+            const ny = dy / dist;
+            const force = (1 - (dist / influenceRadius)) * pointer.strength;
+            p.vx += nx * 0.6 * force + (pointer.vx * 0.01);
+            p.vy += ny * 0.6 * force + (pointer.vy * 0.01);
+            p.alpha = Math.min(0.85, p.alpha + 0.02 * force);
+          } else {
+            p.alpha += (p.baseAlpha - p.alpha) * 0.02;
+          }
+        } else {
+          p.alpha += (p.baseAlpha - p.alpha) * 0.02;
+        }
+
+        p.vx *= 0.985;
+        p.vy *= 0.985;
+
         if (p.x < -50) p.x = innerWidth + 50;
         if (p.x > innerWidth + 50) p.x = -50;
         if (p.y < -50) p.y = innerHeight + 50;
         if (p.y > innerHeight + 50) p.y = -50;
 
-        // draw soft dot
         const rad = p.size;
         const grad = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, rad*2.4);
         const color = `hsla(${p.hue}, 85%, 60%, ${p.alpha})`;
@@ -464,7 +497,7 @@
         ctx.fill();
       }
 
-      // gentle connecting arcs between nearby particles (sparse)
+      // draw connecting lines (sparse)
       ctx.globalCompositeOperation = 'source-over';
       ctx.lineWidth = 0.6;
       ctx.strokeStyle = 'rgba(124,92,255,0.03)';
@@ -483,16 +516,30 @@
         }
       }
 
+      // Draw cursor glow for immediate feedback (only when active)
+      if (pointer.active){
+        const cx = pointer.x;
+        const cy = pointer.y;
+        const r = influenceRadius * 0.9;
+        const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
+        grad.addColorStop(0, 'rgba(125,249,255,0.12)');
+        grad.addColorStop(0.35, 'rgba(122,92,255,0.06)');
+        grad.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.globalCompositeOperation = 'lighter';
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.arc(cx, cy, r, 0, Math.PI*2);
+        ctx.fill();
+      }
+
       requestAnimationFrame(drawParticles);
     }
 
-    // Initialize canvas & particles and start animation
+    // initialize & start
     resizeCanvas();
     requestAnimationFrame(drawParticles);
 
-    // ---------------------------
-    // Hover accessibility: highlight corresponding number
-    // ---------------------------
+    // Card hover minor cosmetic
     cards.forEach(card => {
       card.addEventListener('mouseenter', () => {
         card.style.boxShadow = '0 30px 60px rgba(2,6,23,0.7), 0 0 60px rgba(124,92,255,0.12)';
@@ -502,8 +549,17 @@
       });
     });
 
-    // Ensure wallpaper runs autoplay: no user gesture required.
-    // (We only use canvas drawing and DOM animation; nothing requiring audio or permission.)
+    // Prevent pointer from staying 'active' forever if wallpaper tool doesn't send leave.
+    let lastPointerMove = Date.now();
+    setInterval(()=> {
+      if (pointer.active && (Date.now() - lastPointerMove) > 2400) {
+        clearPointer();
+      }
+    }, 800);
+
+    window.addEventListener('mousemove', ()=> { lastPointerMove = Date.now(); }, { passive:true });
+    window.addEventListener('touchmove', ()=> { lastPointerMove = Date.now(); }, { passive:true });
+
   })();
   </script>
 </body>
