@@ -1,0 +1,510 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>JEE 2027 Countdown — Live Wallpaper</title>
+
+  <!--
+    JEE 2027 Countdown Live Wallpaper
+    - Single-file HTML/CSS/JS (no external assets)
+    - Designed for live wallpaper tools (Lively, Wallpaper Engine)
+    - Target: 25 Jan 2027, 09:00 AM IST (India Standard Time)
+      -> Converted to UTC: 2027-01-25 03:30:00 UTC (used in JS)
+  -->
+
+  <style>
+    /* ============================
+       Variables & Global Reset
+       ============================ */
+    :root{
+      --bg1: #030416;
+      --bg2: #05102a;
+      --accent: #7df9ff;       /* cyan neon */
+      --accent-2: #7a5cff;     /* purple neon */
+      --glass: rgba(255,255,255,0.04);
+      --glass-2: rgba(255,255,255,0.02);
+      --glass-border: rgba(255,255,255,0.06);
+      --glass-glow: rgba(124,92,255,0.12);
+      --text: #e6f7ff;
+      --muted: rgba(230,247,255,0.6);
+      --shadow: 0 10px 30px rgba(2,6,23,0.6);
+      --blur: 8px;
+    }
+
+    *{box-sizing:border-box;margin:0;padding:0}
+    html,body{
+      height:100%;
+      background: radial-gradient(1200px 800px at 10% 10%, rgba(15,30,60,0.5), transparent 10%),
+                  radial-gradient(900px 500px at 90% 80%, rgba(60,10,80,0.35), transparent 10%),
+                  linear-gradient(120deg, var(--bg1), var(--bg2) 60%);
+      color:var(--text);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+      overflow:hidden; /* full-bleed wallpaper */
+    }
+
+    /* Centering container */
+    .wrap{
+      position:relative;
+      min-height:100vh;
+      width:100%;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:center;
+      gap:28px;
+      padding:clamp(18px, 3vw, 48px);
+      text-align:center;
+      /* subtle entrance */
+      opacity:0;
+      transform:translateY(10px);
+      animation:fadeInUp 900ms ease-out forwards;
+      animation-delay:150ms;
+    }
+
+    @keyframes fadeInUp{
+      to{opacity:1; transform:none}
+    }
+
+    /* Futuristic heading with glow */
+    h1.title{
+      font-size:clamp(38px, 6vw, 86px);
+      letter-spacing:6px;
+      color:var(--text);
+      text-transform:uppercase;
+      font-weight:700;
+      text-shadow:
+        0 8px 40px rgba(45,90,255,0.08),
+        0 0 14px rgba(125,249,255,0.06),
+        0 0 30px rgba(122,92,255,0.06);
+      display:flex;
+      align-items:center;
+      gap:14px;
+      justify-content:center;
+    }
+
+    /* small accent line under heading */
+    .title .dot {
+      width:12px;height:12px;border-radius:50%;
+      background:linear-gradient(45deg,var(--accent),var(--accent-2));
+      box-shadow:0 0 18px rgba(124,249,255,0.16), 0 0 36px rgba(122,92,255,0.08);
+      opacity:0.95;
+      transform:translateY(-2px);
+    }
+
+    /* Subtitle / motivational line */
+    .motivation{
+      color:var(--muted);
+      font-size:clamp(12px,1.2vw,18px);
+      letter-spacing:1px;
+      display:flex;
+      gap:12px;
+      align-items:center;
+      justify-content:center;
+    }
+
+    /* Countdown container - glassmorphism */
+    .countdown{
+      display:flex;
+      gap:18px;
+      align-items:center;
+      justify-content:center;
+      flex-wrap:wrap;
+      width:min(1200px, 92%);
+      margin-top:6px;
+    }
+
+    /* Individual box */
+    .card{
+      width:150px;
+      min-width:120px;
+      padding:20px;
+      border-radius:14px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+      border:1px solid var(--glass-border);
+      backdrop-filter: blur(var(--blur));
+      -webkit-backdrop-filter: blur(var(--blur));
+      box-shadow: var(--shadow);
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      align-items:center;
+      transition:transform 300ms cubic-bezier(.2,.9,.2,1), box-shadow 300ms;
+      position:relative;
+      overflow:visible;
+      cursor:default;
+    }
+
+    /* Neon glow layer */
+    .card::before{
+      content:"";
+      position:absolute; inset:-1px;
+      border-radius:15px;
+      background: linear-gradient(90deg, rgba(125,249,255,0.03), rgba(122,92,255,0.02));
+      z-index:0;
+      pointer-events:none;
+    }
+
+    .card:hover{
+      transform:translateY(-8px) scale(1.03);
+      box-shadow: 0 20px 50px rgba(2,6,23,0.75), 0 0 40px rgba(122,92,255,0.08);
+    }
+
+    .number{
+      font-size:clamp(30px, 4vw, 48px);
+      font-weight:800;
+      letter-spacing:1px;
+      color:var(--text);
+      z-index:1;
+      text-shadow:
+        0 6px 18px rgba(27,62,120,0.28),
+        0 0 10px rgba(125,249,255,0.05),
+        0 0 30px rgba(122,92,255,0.04);
+      transition:transform 180ms ease;
+      will-change:transform;
+      display:flex;
+      align-items:baseline;
+      gap:6px;
+    }
+
+    .label{
+      font-size:12px;
+      color:var(--muted);
+      text-transform:uppercase;
+      letter-spacing:1.8px;
+      z-index:1;
+    }
+
+    /* subtle neon halo around numbers */
+    .number::after{
+      content:"";
+      position:absolute;
+      width:70%;
+      height:40%;
+      border-radius:50%;
+      filter:blur(20px);
+      opacity:0.18;
+      background: radial-gradient(circle at 30% 20%, var(--accent) 0%, transparent 48%),
+                  radial-gradient(circle at 80% 90%, var(--accent-2) 0%, transparent 40%);
+      z-index:0;
+      transform:translateY(18px);
+    }
+
+    /* animate on value change: a small pop */
+    .pop {
+      transform:scale(1.08);
+    }
+
+    /* Floating small caption under countdown target */
+    .target{
+      color:rgba(230,247,255,0.45);
+      font-size:13px;
+      margin-top:6px;
+    }
+
+    /* Responsive sizing for cards on wide screens */
+    @media (min-width:1400px){
+      .card{ width:170px; padding:24px; border-radius:16px;}
+      .number{font-size:54px}
+    }
+
+    /* Canvas layer for particles sits behind content */
+    canvas#particles {
+      position:fixed;
+      inset:0;
+      z-index:0;
+      pointer-events:none; /* do not block interactions */
+    }
+
+    /* Ensure main content is above canvas */
+    .wrap { z-index:2; }
+
+    /* small footer hint: hidden on tiny displays */
+    .hint{
+      color:rgba(230,247,255,0.12);
+      font-size:11px;
+      margin-top:18px;
+    }
+
+    /* Background subtle animated gradient overlay */
+    .bg-animated {
+      position:fixed;
+      inset:-20%;
+      z-index: -1;
+      filter:blur(60px) saturate(120%);
+      opacity:0.9;
+      background: conic-gradient(from 210deg at 50% 50%,
+        rgba(10,20,40,0.6),
+        rgba(8,12,28,0.55),
+        rgba(20,6,40,0.45),
+        rgba(10,20,40,0.6));
+      animation:rotateBg 30s linear infinite;
+      mix-blend-mode:overlay;
+    }
+    @keyframes rotateBg{
+      to{transform:rotate(360deg)}
+    }
+
+    /* Utility: small spacing on narrow screens */
+    @media (max-width:420px){
+      .card{ width:110px; padding:14px }
+      .motivation{ font-size:12px }
+    }
+  </style>
+</head>
+<body>
+  <!-- Animated gradient backdrop (subtle) -->
+  <div class="bg-animated" aria-hidden="true"></div>
+
+  <!-- Particle canvas: uses JS to draw animated floating dots -->
+  <canvas id="particles" aria-hidden="true"></canvas>
+
+  <!-- Main content wrapper (centered) -->
+  <main class="wrap" role="main" aria-label="JEE 2027 Countdown">
+    <h1 class="title">
+      <span class="dot" aria-hidden="true"></span>
+      JEE 2027
+    </h1>
+
+    <div class="motivation" aria-hidden="true">
+      <span>Stay Consistent</span>
+      <span style="opacity:0.18">•</span>
+      <span>Stay Focused</span>
+      <span style="opacity:0.18">•</span>
+      <span>IIT Dream 🚀</span>
+    </div>
+
+    <!-- Countdown boxes -->
+    <section class="countdown" aria-live="polite" aria-atomic="true">
+      <div class="card" data-key="days" title="Days remaining">
+        <div class="number" id="days">0</div>
+        <div class="label">Days</div>
+      </div>
+      <div class="card" data-key="hours" title="Hours remaining">
+        <div class="number" id="hours">00</div>
+        <div class="label">Hours</div>
+      </div>
+      <div class="card" data-key="minutes" title="Minutes remaining">
+        <div class="number" id="minutes">00</div>
+        <div class="label">Minutes</div>
+      </div>
+      <div class="card" data-key="seconds" title="Seconds remaining">
+        <div class="number" id="seconds">00</div>
+        <div class="label">Seconds</div>
+      </div>
+    </section>
+
+    <div class="target">Target: 25 Jan 2027 — 09:00 AM IST</div>
+    <div class="hint">Tip: Use as a live wallpaper (Lively/Wallpaper Engine). Animation starts automatically.</div>
+  </main>
+
+  <script>
+  /************************************************************************
+   * JEE 2027 Countdown — JavaScript
+   * - Single-file vanilla JS
+   * - Updates every second
+   * - Target is Jan 25, 2027 09:00 IST (UTC+5:30)
+   *   Converted to UTC: 2027-01-25 03:30:00 UTC -> used with Date.UTC for precision
+   ************************************************************************/
+
+  (function(){
+    // ---------- Configuration ----------
+    // Target moment in UTC (converted from IST 2027-01-25 09:00 IST)
+    // Date.UTC(year, monthIndex(0-11), day, hourUTC, minute, second)
+    const TARGET_UTC_MS = Date.UTC(2027, 0, 25, 3, 30, 0); // 2027-01-25 03:30:00 UTC
+
+    // DOM references
+    const elDays = document.getElementById('days');
+    const elHours = document.getElementById('hours');
+    const elMinutes = document.getElementById('minutes');
+    const elSeconds = document.getElementById('seconds');
+    const cards = document.querySelectorAll('.card');
+
+    // Keep previous values to trigger small pop when changed
+    let prev = { days: null, hours: null, minutes: null, seconds: null };
+
+    // Utility: pad number to at least 2 digits
+    function pad(n){ return String(n).padStart(2,'0'); }
+
+    // Compute remaining time (in days/hours/minutes/seconds)
+    function computeRemaining(nowMs){
+      const diff = TARGET_UTC_MS - nowMs;
+      if (diff <= 0) return { days:0, hours:0, minutes:0, seconds:0, expired:true };
+      let remaining = diff / 1000; // seconds
+      const days = Math.floor(remaining / 86400);
+      remaining -= days * 86400;
+      const hours = Math.floor(remaining / 3600);
+      remaining -= hours * 3600;
+      const minutes = Math.floor(remaining / 60);
+      const seconds = Math.floor(remaining % 60);
+      return { days, hours, minutes, seconds, expired:false };
+    }
+
+    // Update DOM and animate changes
+    function updateCountdown(){
+      const nowMs = Date.now();
+      const { days, hours, minutes, seconds, expired } = computeRemaining(nowMs);
+
+      // update each field if changed
+      setField('days', days, elDays);
+      setField('hours', pad(hours), elHours);
+      setField('minutes', pad(minutes), elMinutes);
+      setField('seconds', pad(seconds), elSeconds);
+
+      if (expired) {
+        // When expired, keep showing zeros and optionally show a message (non-intrusive)
+        // We could flash or show "Exam Day!" — but as wallpaper keep it subtle.
+        // For accessibility, update title once:
+        document.title = "JEE 2027 — It's Time!";
+      } else {
+        document.title = `JEE 2027 — ${days}d ${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
+      }
+    }
+
+    // Set a field and add pop animation if value changed
+    function setField(key, value, element){
+      const newVal = (typeof value === 'number') ? String(value) : value;
+      if (prev[key] !== newVal){
+        // Add quick pop animation
+        element.classList.add('pop');
+        // Remove the class after animation frame to allow re-triggering next changes
+        window.setTimeout(()=> element.classList.remove('pop'), 220);
+        element.textContent = newVal;
+        prev[key] = newVal;
+      }
+    }
+
+    // Kick things off: initial update and interval
+    updateCountdown();
+    // Update every second on the second boundary for better sync
+    const msTillNextSecond = 1000 - (Date.now() % 1000);
+    setTimeout(function(){
+      updateCountdown();
+      setInterval(updateCountdown, 1000);
+    }, msTillNextSecond);
+
+    // -------------------------
+    // Background particle system
+    // -------------------------
+    // Lightweight, optimized to be wallpaper-friendly.
+    const canvas = document.getElementById('particles');
+    const ctx = canvas.getContext('2d', { alpha: true });
+
+    let DPR = Math.min(window.devicePixelRatio || 1, 2); // limit DPR to 2 for performance
+    let particles = [];
+    const PARTICLE_COUNT_BASE = 40; // base count, scales with area
+
+    function resizeCanvas(){
+      DPR = Math.min(window.devicePixelRatio || 1, 2);
+      canvas.width = Math.floor(innerWidth * DPR);
+      canvas.height = Math.floor(innerHeight * DPR);
+      canvas.style.width = innerWidth + 'px';
+      canvas.style.height = innerHeight + 'px';
+      ctx.setTransform(DPR,0,0,DPR,0,0);
+      initParticles(); // regenerate based on size
+    }
+    window.addEventListener('resize', resizeCanvas, { passive:true });
+
+    function initParticles(){
+      particles = [];
+      const area = innerWidth * innerHeight;
+      // scale particle count with screen area
+      const count = Math.round(PARTICLE_COUNT_BASE * (area / (1366*768)));
+      for (let i=0;i<count;i++){
+        particles.push({
+          x: Math.random() * innerWidth,
+          y: Math.random() * innerHeight,
+          size: (Math.random()*1.6 + 0.6) * (innerWidth > 3000 ? 1.6 : 1),
+          vx: (Math.random()-0.5) * 0.2, // slow drift
+          vy: (Math.random()-0.5) * 0.2,
+          hue: 200 + Math.random()*120, // bluish-purples
+          alpha: 0.1 + Math.random()*0.35
+        });
+      }
+    }
+
+    let lastT = performance.now();
+    function drawParticles(t){
+      const dt = Math.min(32, t - lastT);
+      lastT = t;
+      // subtle motion: clear with a low-opacity rect for trailing effect
+      ctx.clearRect(0,0,innerWidth,innerHeight);
+
+      // draw gentle vignette glow for depth
+      const g = ctx.createRadialGradient(innerWidth*0.2, innerHeight*0.15, 0, innerWidth*0.2, innerHeight*0.15, innerWidth);
+      g.addColorStop(0, 'rgba(20,40,80,0.06)');
+      g.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = g;
+      ctx.fillRect(0,0,innerWidth,innerHeight);
+
+      for (let p of particles){
+        // Move using tiny velocities and a slow sinusoidal drift for life-like motion
+        p.x += p.vx * (dt * 0.06) + Math.sin((t + p.x*10) * 0.0002) * 0.05;
+        p.y += p.vy * (dt * 0.06) + Math.cos((t + p.y*7) * 0.00019) * 0.05;
+
+        // wrap edges
+        if (p.x < -50) p.x = innerWidth + 50;
+        if (p.x > innerWidth + 50) p.x = -50;
+        if (p.y < -50) p.y = innerHeight + 50;
+        if (p.y > innerHeight + 50) p.y = -50;
+
+        // draw soft dot
+        const rad = p.size;
+        const grad = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, rad*2.4);
+        const color = `hsla(${p.hue}, 85%, 60%, ${p.alpha})`;
+        grad.addColorStop(0, color);
+        grad.addColorStop(0.45, color);
+        grad.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.globalCompositeOperation = 'lighter';
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, rad*1.8, 0, Math.PI*2);
+        ctx.fill();
+      }
+
+      // gentle connecting arcs between nearby particles (sparse)
+      ctx.globalCompositeOperation = 'source-over';
+      ctx.lineWidth = 0.6;
+      ctx.strokeStyle = 'rgba(124,92,255,0.03)';
+      for (let i=0;i<particles.length;i++){
+        const a = particles[i];
+        for (let j=i+1;j<particles.length && j < i+4; j++){
+          const b = particles[j];
+          const dx = a.x-b.x, dy = a.y-b.y;
+          const dist = Math.sqrt(dx*dx+dy*dy);
+          if (dist < 120){
+            ctx.beginPath();
+            ctx.moveTo(a.x,a.y);
+            ctx.lineTo(b.x,b.y);
+            ctx.stroke();
+          }
+        }
+      }
+
+      requestAnimationFrame(drawParticles);
+    }
+
+    // Initialize canvas & particles and start animation
+    resizeCanvas();
+    requestAnimationFrame(drawParticles);
+
+    // ---------------------------
+    // Hover accessibility: highlight corresponding number
+    // ---------------------------
+    cards.forEach(card => {
+      card.addEventListener('mouseenter', () => {
+        card.style.boxShadow = '0 30px 60px rgba(2,6,23,0.7), 0 0 60px rgba(124,92,255,0.12)';
+      });
+      card.addEventListener('mouseleave', () => {
+        card.style.boxShadow = '';
+      });
+    });
+
+    // Ensure wallpaper runs autoplay: no user gesture required.
+    // (We only use canvas drawing and DOM animation; nothing requiring audio or permission.)
+  })();
+  </script>
+</body>
+</html>
