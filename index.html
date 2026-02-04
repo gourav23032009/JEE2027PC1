@@ -3,564 +3,586 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>JEE 2027 Countdown — Live Wallpaper</title>
-
-  <!--
-    JEE 2027 Countdown Live Wallpaper (single-file)
-    - Mouse-interactive animated background (particles respond to cursor)
-    - Target: 20 Jan 2027, 09:00 AM IST (converted to UTC in JS)
-    - No external assets or libraries
-  -->
-
+  <title>EK Professional Notes Maker</title>
   <style>
-    /* ============================
-       Variables & Global Reset
-       ============================ */
     :root{
-      --bg1: #030416;
-      --bg2: #05102a;
-      --accent: #7df9ff;
-      --accent-2: #7a5cff;
-      --glass: rgba(255,255,255,0.04);
-      --glass-border: rgba(255,255,255,0.06);
-      --text: #e6f7ff;
-      --muted: rgba(230,247,255,0.6);
-      --shadow: 0 10px 30px rgba(2,6,23,0.6);
-      --blur: 8px;
+      --bg: #f3f1ee;
+      --surface: #ffffff;
+      --ink: #1f2937;
+      --muted: #6b7280;
+      --accent: #3b82f6;
+      --accent-soft: rgba(59, 130, 246, 0.12);
+      --border: #e5e7eb;
+      --shadow: 0 18px 40px rgba(15, 23, 42, 0.12);
     }
 
     *{box-sizing:border-box;margin:0;padding:0}
-    html,body{
-      height:100%;
-      background: radial-gradient(1200px 800px at 10% 10%, rgba(15,30,60,0.5), transparent 10%),
-                  radial-gradient(900px 500px at 90% 80%, rgba(60,10,80,0.35), transparent 10%),
-                  linear-gradient(120deg, var(--bg1), var(--bg2) 60%);
-      color:var(--text);
-      font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
-      -webkit-font-smoothing:antialiased;
-      -moz-osx-font-smoothing:grayscale;
-      overflow:hidden;
+    body{
+      font-family: "Poppins", "Segoe UI", system-ui, -apple-system, sans-serif;
+      background: linear-gradient(120deg, #f8fafc, #eef2ff 55%, #fdf2f8);
+      color: var(--ink);
+      min-height: 100vh;
     }
 
-    /* Centering container */
-    .wrap{
-      position:relative;
-      min-height:100vh;
-      width:100%;
+    header{
+      padding: 28px clamp(18px, 4vw, 48px) 16px;
       display:flex;
-      flex-direction:column;
-      align-items:center;
-      justify-content:center;
-      gap:28px;
-      padding:clamp(18px, 3vw, 48px);
-      text-align:center;
-      opacity:0;
-      transform:translateY(10px);
-      animation:fadeInUp 900ms ease-out forwards;
-      animation-delay:150ms;
-    }
-
-    @keyframes fadeInUp{
-      to{opacity:1; transform:none}
-    }
-
-    /* Futuristic heading with glow */
-    h1.title{
-      font-size:clamp(38px, 6vw, 86px);
-      letter-spacing:6px;
-      color:var(--text);
-      text-transform:uppercase;
-      font-weight:700;
-      text-shadow:
-        0 8px 40px rgba(45,90,255,0.08),
-        0 0 14px rgba(125,249,255,0.06),
-        0 0 30px rgba(122,92,255,0.06);
-      display:flex;
-      align-items:center;
-      gap:14px;
-      justify-content:center;
-    }
-
-    /* small accent line under heading */
-    .title .dot {
-      width:12px;height:12px;border-radius:50%;
-      background:linear-gradient(45deg,var(--accent),var(--accent-2));
-      box-shadow:0 0 18px rgba(124,249,255,0.16), 0 0 36px rgba(122,92,255,0.08);
-      opacity:0.95;
-      transform:translateY(-2px);
-    }
-
-    /* Subtitle / motivational line */
-    .motivation{
-      color:var(--muted);
-      font-size:clamp(12px,1.2vw,18px);
-      letter-spacing:1px;
-      display:flex;
-      gap:12px;
-      align-items:center;
-      justify-content:center;
-    }
-
-    /* Countdown container - glassmorphism */
-    .countdown{
-      display:flex;
-      gap:18px;
-      align-items:center;
-      justify-content:center;
       flex-wrap:wrap;
-      width:min(1200px, 92%);
-      margin-top:6px;
+      align-items:center;
+      justify-content:space-between;
+      gap:16px;
     }
 
-    /* Individual box */
-    .card{
-      width:150px;
-      min-width:120px;
-      padding:20px;
-      border-radius:14px;
-      background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
-      border:1px solid var(--glass-border);
-      backdrop-filter: blur(var(--blur));
-      -webkit-backdrop-filter: blur(var(--blur));
-      box-shadow: var(--shadow);
+    .title{
       display:flex;
       flex-direction:column;
-      gap:10px;
-      align-items:center;
-      transition:transform 300ms cubic-bezier(.2,.9,.2,1), box-shadow 300ms;
-      position:relative;
-      overflow:visible;
-      cursor:default;
-    }
-
-    /* Neon glow layer */
-    .card::before{
-      content:"";
-      position:absolute; inset:-1px;
-      border-radius:15px;
-      background: linear-gradient(90deg, rgba(125,249,255,0.03), rgba(122,92,255,0.02));
-      z-index:0;
-      pointer-events:none;
-    }
-
-    .card:hover{
-      transform:translateY(-8px) scale(1.03);
-      box-shadow: 0 20px 50px rgba(2,6,23,0.75), 0 0 40px rgba(122,92,255,0.08);
-    }
-
-    .number{
-      font-size:clamp(30px, 4vw, 48px);
-      font-weight:800;
-      letter-spacing:1px;
-      color:var(--text);
-      z-index:1;
-      text-shadow:
-        0 6px 18px rgba(27,62,120,0.28),
-        0 0 10px rgba(125,249,255,0.05),
-        0 0 30px rgba(122,92,255,0.04);
-      transition:transform 180ms ease;
-      will-change:transform;
-      display:flex;
-      align-items:baseline;
       gap:6px;
     }
 
-    .label{
-      font-size:12px;
-      color:var(--muted);
-      text-transform:uppercase;
-      letter-spacing:1.8px;
-      z-index:1;
+    .title h1{
+      font-size: clamp(28px, 3.8vw, 46px);
+      font-weight:700;
     }
 
-    /* subtle neon halo around numbers */
-    .number::after{
-      content:"";
+    .title p{
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .actions{
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px;
+      align-items:center;
+    }
+
+    button, select, input[type="color"], input[type="file"]{
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--ink);
+      padding: 10px 12px;
+      border-radius: 10px;
+      font-size: 14px;
+      box-shadow: 0 6px 16px rgba(15, 23, 42, 0.06);
+    }
+
+    button{
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    button.primary{
+      background: var(--accent);
+      color: #fff;
+      border-color: transparent;
+    }
+
+    button:hover{
+      transform: translateY(-1px);
+      box-shadow: 0 8px 20px rgba(15, 23, 42, 0.12);
+    }
+
+    main{
+      display:grid;
+      grid-template-columns: 280px 1fr;
+      gap: 18px;
+      padding: 0 clamp(18px, 4vw, 48px) 32px;
+    }
+
+    .panel{
+      background: var(--surface);
+      border-radius: 18px;
+      padding: 18px;
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow);
+      display:flex;
+      flex-direction:column;
+      gap:16px;
+      height: fit-content;
+    }
+
+    .panel h2{
+      font-size: 16px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--muted);
+    }
+
+    .palette{
+      display:grid;
+      gap:12px;
+    }
+
+    .draggable-item{
+      padding: 12px;
+      border: 1px dashed var(--border);
+      border-radius: 12px;
+      background: #f9fafb;
+      cursor: grab;
+      font-size: 14px;
+    }
+
+    .toolbar{
+      display:grid;
+      gap:10px;
+    }
+
+    .toolbar label{
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .board-wrapper{
+      background: var(--surface);
+      border-radius: 24px;
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow);
+      padding: 18px;
+      min-height: 70vh;
+      position: relative;
+      overflow:hidden;
+    }
+
+    .board{
+      min-height: 65vh;
+      background: var(--bg);
+      border-radius: 16px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .board::before{
+      content: "";
+      position: absolute;
+      inset: 0;
+      background-image: linear-gradient(transparent 23px, rgba(0,0,0,0.04) 24px),
+                        linear-gradient(90deg, transparent 23px, rgba(0,0,0,0.04) 24px);
+      background-size: 24px 24px;
+      pointer-events: none;
+      opacity: 0.6;
+    }
+
+    .note{
       position:absolute;
-      width:70%;
-      height:40%;
-      border-radius:50%;
-      filter:blur(20px);
-      opacity:0.18;
-      background: radial-gradient(circle at 30% 20%, var(--accent) 0%, transparent 48%),
-                  radial-gradient(circle at 80% 90%, var(--accent-2) 0%, transparent 40%);
-      z-index:0;
-      transform:translateY(18px);
+      padding: 12px 14px;
+      background: #fffdf6;
+      border: 1px solid #fcd34d;
+      border-radius: 12px;
+      min-width: 160px;
+      box-shadow: 0 10px 16px rgba(15, 23, 42, 0.08);
+      cursor: grab;
     }
 
-    /* animate on value change: a small pop */
-    .pop {
-      transform:scale(1.08);
+    .note .content{
+      outline: none;
+      min-height: 48px;
     }
 
-    /* Floating small caption under countdown target */
-    .target{
-      color:rgba(230,247,255,0.45);
-      font-size:13px;
-      margin-top:6px;
+    .note.handwritten .content{
+      font-family: "Comic Sans MS", "Segoe Print", "Bradley Hand", cursive;
+      font-size: 18px;
     }
 
-    /* Canvas layer for particles sits behind content */
-    canvas#particles {
-      position:fixed;
-      inset:0;
-      z-index:0;
-      pointer-events:none; /* do not block interactions */
+    .text-box{
+      position:absolute;
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.9);
+      min-width: 140px;
+      cursor: grab;
     }
 
-    /* Ensure main content is above canvas */
-    .wrap { z-index:2; }
-
-    /* small footer hint: hidden on tiny displays */
-    .hint{
-      color:rgba(230,247,255,0.12);
-      font-size:11px;
-      margin-top:18px;
+    .text-box .content{
+      outline: none;
+      min-height: 30px;
     }
 
-    /* Background subtle animated gradient overlay */
-    .bg-animated {
-      position:fixed;
-      inset:-20%;
-      z-index: -1;
-      filter:blur(60px) saturate(120%);
-      opacity:0.9;
-      background: conic-gradient(from 210deg at 50% 50%,
-        rgba(10,20,40,0.6),
-        rgba(8,12,28,0.55),
-        rgba(20,6,40,0.45),
-        rgba(10,20,40,0.6));
-      animation:rotateBg 30s linear infinite;
-      mix-blend-mode:overlay;
-    }
-    @keyframes rotateBg{
-      to{transform:rotate(360deg)}
+    .shape{
+      position:absolute;
+      width: 140px;
+      height: 80px;
+      border-radius: 16px;
+      border: 2px solid #a855f7;
+      background: rgba(167,139,250,0.08);
+      cursor: grab;
     }
 
-    /* Utility: small spacing on narrow screens */
-    @media (max-width:420px){
-      .card{ width:110px; padding:14px }
-      .motivation{ font-size:12px }
+    .shape.circle{
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+    }
+
+    .shape.line{
+      width: 180px;
+      height: 4px;
+      border-radius: 999px;
+      background: #60a5fa;
+      border: none;
+    }
+
+    .diagram{
+      position:absolute;
+      padding: 10px;
+      background: #ecfeff;
+      border: 1px dashed #22d3ee;
+      border-radius: 10px;
+      cursor: grab;
+    }
+
+    .diagram svg{
+      width: 120px;
+      height: 80px;
+      display:block;
+    }
+
+    .note.selected,
+    .text-box.selected,
+    .shape.selected,
+    .diagram.selected,
+    .board-image.selected{
+      outline: 3px solid var(--accent);
+      outline-offset: 2px;
+      box-shadow: 0 0 0 6px var(--accent-soft);
+    }
+
+    .board-image{
+      position:absolute;
+      max-width: 220px;
+      max-height: 180px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      box-shadow: 0 10px 16px rgba(15, 23, 42, 0.12);
+      cursor: grab;
+      background: #fff;
+    }
+
+    .status{
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    footer{
+      padding: 18px clamp(18px, 4vw, 48px) 28px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    @media (max-width: 960px){
+      main{
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media print{
+      header, .panel, footer{ display:none; }
+      body{ background: #fff; }
+      .board-wrapper{
+        box-shadow: none;
+        border: none;
+        padding: 0;
+      }
+      .board{ background: #fff; }
+      .board::before{ display:none; }
     }
   </style>
 </head>
 <body>
-  <!-- Animated gradient backdrop (subtle) -->
-  <div class="bg-animated" aria-hidden="true"></div>
-
-  <!-- Particle canvas: uses JS to draw animated floating dots -->
-  <canvas id="particles" aria-hidden="true"></canvas>
-
-  <!-- Main content wrapper (centered) -->
-  <main class="wrap" role="main" aria-label="JEE 2027 Countdown">
-    <h1 class="title">
-      <span class="dot" aria-hidden="true"></span>
-      JEE 2027
-    </h1>
-
-    <div class="motivation" aria-hidden="true">
-      <span>Stay Consistent</span>
-      <span style="opacity:0.18">•</span>
-      <span>Stay Focused</span>
-      <span style="opacity:0.18">•</span>
-      <span>IIT Dream</span>
+  <header>
+    <div class="title">
+      <h1>EK Professional Notes Maker</h1>
+      <p>Handwritten-style notes, diagrams, images, and drag & drop study elements with auto-save.</p>
     </div>
+    <div class="actions">
+      <button class="primary" id="addNote">Add Note</button>
+      <button id="addText">Add Text</button>
+      <button id="exportPdf">Export PDF</button>
+      <button id="clearBoard">Clear Board</button>
+    </div>
+  </header>
 
-    <!-- Countdown boxes -->
-    <section class="countdown" aria-live="polite" aria-atomic="true">
-      <div class="card" data-key="days" title="Days remaining">
-        <div class="number" id="days">0</div>
-        <div class="label">Days</div>
+  <main>
+    <aside class="panel">
+      <h2>Toolbox</h2>
+      <div class="toolbar">
+        <label for="fontStyle">Font Style</label>
+        <select id="fontStyle">
+          <option value="handwritten">Handwritten</option>
+          <option value="clean">Clean</option>
+        </select>
+
+        <label for="textColor">Text Color</label>
+        <input type="color" id="textColor" value="#1f2937" />
+
+        <label for="highlightColor">Highlight</label>
+        <input type="color" id="highlightColor" value="#fff9c4" />
+
+        <label for="boardColor">Board Color</label>
+        <input type="color" id="boardColor" value="#f3f1ee" />
+
+        <label for="imageUpload">Add Image / Diagram</label>
+        <input type="file" id="imageUpload" accept="image/*" />
       </div>
-      <div class="card" data-key="hours" title="Hours remaining">
-        <div class="number" id="hours">00</div>
-        <div class="label">Hours</div>
+
+      <h2>Drag & Drop Elements</h2>
+      <div class="palette">
+        <div class="draggable-item" draggable="true" data-type="sticky">Sticky Note</div>
+        <div class="draggable-item" draggable="true" data-type="textbox">Text Box</div>
+        <div class="draggable-item" draggable="true" data-type="circle">Circle</div>
+        <div class="draggable-item" draggable="true" data-type="rectangle">Rectangle</div>
+        <div class="draggable-item" draggable="true" data-type="line">Divider Line</div>
+        <div class="draggable-item" draggable="true" data-type="diagram">Diagram Card</div>
       </div>
-      <div class="card" data-key="minutes" title="Minutes remaining">
-        <div class="number" id="minutes">00</div>
-        <div class="label">Minutes</div>
-      </div>
-      <div class="card" data-key="seconds" title="Seconds remaining">
-        <div class="number" id="seconds">00</div>
-        <div class="label">Seconds</div>
-      </div>
+
+      <p class="status" id="status">Auto-saving to local storage...</p>
+    </aside>
+
+    <section class="board-wrapper">
+      <div class="board" id="board" aria-label="Notes board" role="region"></div>
     </section>
-
-    <div class="target">Target: 20 Jan 2027 — 09:00 AM IST</div>
-    <div class="hint">Tip: Use as a live wallpaper (Lively/Wallpaper Engine). Animation starts automatically.</div>
   </main>
 
+  <footer>
+    Tip: Drag elements from the toolbox into the board. Click any element to style it, and edits are saved automatically.
+  </footer>
+
   <script>
-  /************************************************************************
-   * JEE 2027 Countdown + Mouse-Interactive Particle Background
-   * - Single-file vanilla JS
-   * - Target: Jan 20, 2027 09:00 IST (Date.UTC used for precision)
-   * - Particles respond to mouse/touch: subtle repulsion + glowing cursor
-   ************************************************************************/
+    const board = document.getElementById('board');
+    const addNoteBtn = document.getElementById('addNote');
+    const addTextBtn = document.getElementById('addText');
+    const exportPdfBtn = document.getElementById('exportPdf');
+    const clearBoardBtn = document.getElementById('clearBoard');
+    const textColorInput = document.getElementById('textColor');
+    const highlightInput = document.getElementById('highlightColor');
+    const boardColorInput = document.getElementById('boardColor');
+    const fontStyleSelect = document.getElementById('fontStyle');
+    const imageUpload = document.getElementById('imageUpload');
+    const statusEl = document.getElementById('status');
 
-  (function(){
-    // ---------- Configuration ----------
-    // TARGET: 20 Jan 2027, 09:00 IST -> UTC = 2027-01-20 03:30:00 UTC
-    const TARGET_UTC_MS = Date.UTC(2027, 0, 20, 3, 30, 0); // 2027-01-20 03:30:00 UTC (09:00 IST)
-    const elDays = document.getElementById('days');
-    const elHours = document.getElementById('hours');
-    const elMinutes = document.getElementById('minutes');
-    const elSeconds = document.getElementById('seconds');
-    const cards = document.querySelectorAll('.card');
-    let prev = { days: null, hours: null, minutes: null, seconds: null };
+    let selectedElement = null;
 
-    function pad(n){ return String(n).padStart(2,'0'); }
-    function computeRemaining(nowMs){
-      const diff = TARGET_UTC_MS - nowMs;
-      if (diff <= 0) return { days:0, hours:0, minutes:0, seconds:0, expired:true };
-      let remaining = diff / 1000;
-      const days = Math.floor(remaining / 86400);
-      remaining -= days * 86400;
-      const hours = Math.floor(remaining / 3600);
-      remaining -= hours * 3600;
-      const minutes = Math.floor(remaining / 60);
-      const seconds = Math.floor(remaining % 60);
-      return { days, hours, minutes, seconds, expired:false };
-    }
+    const STORAGE_KEY = 'ek-notes-board-v1';
 
-    function setField(key, value, element){
-      const newVal = (typeof value === 'number') ? String(value) : value;
-      if (prev[key] !== newVal){
-        element.classList.add('pop');
-        window.setTimeout(()=> element.classList.remove('pop'), 220);
-        element.textContent = newVal;
-        prev[key] = newVal;
-      }
-    }
-
-    function updateCountdown(){
-      const nowMs = Date.now();
-      const { days, hours, minutes, seconds, expired } = computeRemaining(nowMs);
-      setField('days', days, elDays);
-      setField('hours', pad(hours), elHours);
-      setField('minutes', pad(minutes), elMinutes);
-      setField('seconds', pad(seconds), elSeconds);
-      if (expired) {
-        document.title = "JEE 2027 — It's Time!";
-      } else {
-        document.title = `JEE 2027 — ${days}d ${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
-      }
-    }
-
-    updateCountdown();
-    const msTillNextSecond = 1000 - (Date.now() % 1000);
-    setTimeout(function(){
-      updateCountdown();
-      setInterval(updateCountdown, 1000);
-    }, msTillNextSecond);
-
-    // -------------------------
-    // Particle system with mouse interaction
-    // -------------------------
-    const canvas = document.getElementById('particles');
-    const ctx = canvas.getContext('2d', { alpha: true });
-    let DPR = Math.min(window.devicePixelRatio || 1, 2);
-    let particles = [];
-    const PARTICLE_COUNT_BASE = 40;
-
-    // Mouse/touch influence object
-    const pointer = {
-      x: -9999, y: -9999,
-      px: -9999, py: -9999,
-      vx: 0, vy: 0,
-      active: false,
-      radius: 160,
-      strength: 0.9
+    const setStatus = (message) => {
+      statusEl.textContent = message;
+      setTimeout(() => {
+        statusEl.textContent = 'Auto-saving to local storage...';
+      }, 2000);
     };
 
-    function resizeCanvas(){
-      DPR = Math.min(window.devicePixelRatio || 1, 2);
-      canvas.width = Math.floor(innerWidth * DPR);
-      canvas.height = Math.floor(innerHeight * DPR);
-      canvas.style.width = innerWidth + 'px';
-      canvas.style.height = innerHeight + 'px';
-      ctx.setTransform(DPR,0,0,DPR,0,0);
-      initParticles();
-    }
-    window.addEventListener('resize', resizeCanvas, { passive:true });
-
-    function initParticles(){
-      particles = [];
-      const area = innerWidth * innerHeight;
-      const count = Math.max(18, Math.round(PARTICLE_COUNT_BASE * (area / (1366*768))));
-      for (let i=0;i<count;i++){
-        particles.push({
-          x: Math.random() * innerWidth,
-          y: Math.random() * innerHeight,
-          size: (Math.random()*1.6 + 0.6) * (innerWidth > 3000 ? 1.6 : 1),
-          vx: (Math.random()-0.5) * 0.2,
-          vy: (Math.random()-0.5) * 0.2,
-          hue: 200 + Math.random()*120,
-          alpha: 0.08 + Math.random()*0.3,
-          baseAlpha: 0.08 + Math.random()*0.3
-        });
-      }
-    }
-
-    function setPointer(x,y){
-      pointer.px = pointer.x;
-      pointer.py = pointer.y;
-      pointer.x = x;
-      pointer.y = y;
-      pointer.vx = (pointer.x - pointer.px);
-      pointer.vy = (pointer.y - pointer.py);
-      pointer.active = true;
-    }
-    function clearPointer(){
-      pointer.active = false;
-    }
-
-    window.addEventListener('mousemove', (e) => {
-      setPointer(e.clientX, e.clientY);
-    }, { passive:true });
-    window.addEventListener('mousedown', (e) => {
-      setPointer(e.clientX, e.clientY);
-    }, { passive:true });
-    window.addEventListener('mouseleave', () => {
-      clearPointer();
-    }, { passive:true });
-    window.addEventListener('touchstart', (e) => {
-      const t = e.touches[0];
-      if (t) setPointer(t.clientX, t.clientY);
-    }, { passive:true });
-    window.addEventListener('touchmove', (e) => {
-      const t = e.touches[0];
-      if (t) setPointer(t.clientX, t.clientY);
-    }, { passive:true });
-    window.addEventListener('touchend', () => {
-      clearPointer();
-    }, { passive:true });
-
-    let lastT = performance.now();
-    function drawParticles(t){
-      const dt = Math.min(32, t - lastT);
-      lastT = t;
-
-      ctx.clearRect(0,0,innerWidth,innerHeight);
-
-      // background vignette for depth
-      const g = ctx.createRadialGradient(innerWidth*0.2, innerHeight*0.15, 0, innerWidth*0.2, innerHeight*0.15, innerWidth);
-      g.addColorStop(0, 'rgba(20,40,80,0.06)');
-      g.addColorStop(1, 'rgba(0,0,0,0)');
-      ctx.fillStyle = g;
-      ctx.fillRect(0,0,innerWidth,innerHeight);
-
-      const influenceRadius = pointer.radius * (innerWidth / 1366);
-
-      for (let p of particles){
-        // subtle ambient motion
-        p.x += p.vx * (dt * 0.06) + Math.sin((t + p.x*10) * 0.0002) * 0.05;
-        p.y += p.vy * (dt * 0.06) + Math.cos((t + p.y*7) * 0.00019) * 0.05;
-
-        // pointer interaction: repulse particles within radius, with a falloff
-        if (pointer.active){
-          const dx = p.x - pointer.x;
-          const dy = p.y - pointer.y;
-          const dist = Math.sqrt(dx*dx + dy*dy);
-          if (dist < influenceRadius && dist > 0.001){
-            const nx = dx / dist;
-            const ny = dy / dist;
-            const force = (1 - (dist / influenceRadius)) * pointer.strength;
-            p.vx += nx * 0.6 * force + (pointer.vx * 0.01);
-            p.vy += ny * 0.6 * force + (pointer.vy * 0.01);
-            p.alpha = Math.min(0.85, p.alpha + 0.02 * force);
-          } else {
-            p.alpha += (p.baseAlpha - p.alpha) * 0.02;
-          }
-        } else {
-          p.alpha += (p.baseAlpha - p.alpha) * 0.02;
-        }
-
-        p.vx *= 0.985;
-        p.vy *= 0.985;
-
-        if (p.x < -50) p.x = innerWidth + 50;
-        if (p.x > innerWidth + 50) p.x = -50;
-        if (p.y < -50) p.y = innerHeight + 50;
-        if (p.y > innerHeight + 50) p.y = -50;
-
-        const rad = p.size;
-        const grad = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, rad*2.4);
-        const color = `hsla(${p.hue}, 85%, 60%, ${p.alpha})`;
-        grad.addColorStop(0, color);
-        grad.addColorStop(0.45, color);
-        grad.addColorStop(1, 'rgba(0,0,0,0)');
-        ctx.globalCompositeOperation = 'lighter';
-        ctx.fillStyle = grad;
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, rad*1.8, 0, Math.PI*2);
-        ctx.fill();
+    const createElement = (type, x = 40, y = 40) => {
+      let el;
+      if (type === 'sticky') {
+        el = document.createElement('div');
+        el.className = 'note handwritten draggable';
+        el.innerHTML = '<div class="content" contenteditable="true">New handwritten note...</div>';
+      } else if (type === 'textbox') {
+        el = document.createElement('div');
+        el.className = 'text-box draggable';
+        el.innerHTML = '<div class="content" contenteditable="true">Type here...</div>';
+      } else if (type === 'circle') {
+        el = document.createElement('div');
+        el.className = 'shape circle draggable';
+      } else if (type === 'rectangle') {
+        el = document.createElement('div');
+        el.className = 'shape rectangle draggable';
+      } else if (type === 'line') {
+        el = document.createElement('div');
+        el.className = 'shape line draggable';
+      } else if (type === 'diagram') {
+        el = document.createElement('div');
+        el.className = 'diagram draggable';
+        el.innerHTML = `
+          <svg viewBox="0 0 120 80" aria-hidden="true">
+            <rect x="6" y="6" width="40" height="24" rx="6" fill="#a7f3d0" />
+            <rect x="74" y="10" width="40" height="24" rx="6" fill="#bfdbfe" />
+            <rect x="40" y="46" width="40" height="24" rx="6" fill="#fde68a" />
+            <line x1="46" y1="18" x2="74" y2="22" stroke="#94a3b8" stroke-width="2" />
+            <line x1="26" y1="30" x2="54" y2="50" stroke="#94a3b8" stroke-width="2" />
+            <line x1="94" y1="32" x2="66" y2="50" stroke="#94a3b8" stroke-width="2" />
+          </svg>
+          <div class="content" contenteditable="true">Diagram notes</div>
+        `;
       }
 
-      // draw connecting lines (sparse)
-      ctx.globalCompositeOperation = 'source-over';
-      ctx.lineWidth = 0.6;
-      ctx.strokeStyle = 'rgba(124,92,255,0.03)';
-      for (let i=0;i<particles.length;i++){
-        const a = particles[i];
-        for (let j=i+1;j<particles.length && j < i+4; j++){
-          const b = particles[j];
-          const dx = a.x-b.x, dy = a.y-b.y;
-          const dist = Math.sqrt(dx*dx+dy*dy);
-          if (dist < 120){
-            ctx.beginPath();
-            ctx.moveTo(a.x,a.y);
-            ctx.lineTo(b.x,b.y);
-            ctx.stroke();
-          }
-        }
+      if (!el) return null;
+
+      el.dataset.type = type;
+      el.style.left = `${x}px`;
+      el.style.top = `${y}px`;
+      board.appendChild(el);
+      makeDraggable(el);
+      setSelected(el);
+      saveBoard();
+      return el;
+    };
+
+    const setSelected = (el) => {
+      document.querySelectorAll('.selected').forEach(item => item.classList.remove('selected'));
+      selectedElement = el;
+      if (selectedElement) {
+        selectedElement.classList.add('selected');
       }
+    };
 
-      // Draw cursor glow for immediate feedback (only when active)
-      if (pointer.active){
-        const cx = pointer.x;
-        const cy = pointer.y;
-        const r = influenceRadius * 0.9;
-        const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
-        grad.addColorStop(0, 'rgba(125,249,255,0.12)');
-        grad.addColorStop(0.35, 'rgba(122,92,255,0.06)');
-        grad.addColorStop(1, 'rgba(0,0,0,0)');
-        ctx.globalCompositeOperation = 'lighter';
-        ctx.fillStyle = grad;
-        ctx.beginPath();
-        ctx.arc(cx, cy, r, 0, Math.PI*2);
-        ctx.fill();
+    const makeDraggable = (el) => {
+      let offsetX = 0;
+      let offsetY = 0;
+      let isDragging = false;
+
+      const onPointerDown = (event) => {
+        if (event.target.closest('[contenteditable="true"]')) return;
+        isDragging = true;
+        el.setPointerCapture(event.pointerId);
+        const rect = el.getBoundingClientRect();
+        offsetX = event.clientX - rect.left;
+        offsetY = event.clientY - rect.top;
+        setSelected(el);
+      };
+
+      const onPointerMove = (event) => {
+        if (!isDragging) return;
+        const boardRect = board.getBoundingClientRect();
+        const x = event.clientX - boardRect.left - offsetX;
+        const y = event.clientY - boardRect.top - offsetY;
+        el.style.left = `${Math.max(0, x)}px`;
+        el.style.top = `${Math.max(0, y)}px`;
+      };
+
+      const onPointerUp = (event) => {
+        if (!isDragging) return;
+        isDragging = false;
+        el.releasePointerCapture(event.pointerId);
+        saveBoard();
+      };
+
+      el.addEventListener('pointerdown', onPointerDown);
+      el.addEventListener('pointermove', onPointerMove);
+      el.addEventListener('pointerup', onPointerUp);
+      el.addEventListener('pointerleave', onPointerUp);
+
+      el.addEventListener('click', () => setSelected(el));
+    };
+
+    const saveBoard = () => {
+      const data = {
+        boardColor: board.style.backgroundColor || getComputedStyle(board).backgroundColor,
+        content: board.innerHTML
+      };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+      setStatus('Notes saved locally.');
+    };
+
+    const loadBoard = () => {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (!stored) return;
+      try {
+        const data = JSON.parse(stored);
+        board.style.backgroundColor = data.boardColor || '#f3f1ee';
+        board.innerHTML = data.content || '';
+        board.querySelectorAll('.draggable').forEach(makeDraggable);
+      } catch (error) {
+        console.error('Failed to load stored notes', error);
       }
+    };
 
-      requestAnimationFrame(drawParticles);
-    }
+    const handleBoardClick = (event) => {
+      if (event.target === board) {
+        setSelected(null);
+      }
+    };
 
-    // initialize & start
-    resizeCanvas();
-    requestAnimationFrame(drawParticles);
+    const applyTextColor = () => {
+      if (!selectedElement) return;
+      selectedElement.style.color = textColorInput.value;
+      saveBoard();
+    };
 
-    // Card hover minor cosmetic
-    cards.forEach(card => {
-      card.addEventListener('mouseenter', () => {
-        card.style.boxShadow = '0 30px 60px rgba(2,6,23,0.7), 0 0 60px rgba(124,92,255,0.12)';
-      });
-      card.addEventListener('mouseleave', () => {
-        card.style.boxShadow = '';
+    const applyHighlight = () => {
+      if (!selectedElement) return;
+      selectedElement.style.backgroundColor = highlightInput.value;
+      saveBoard();
+    };
+
+    const applyFontStyle = () => {
+      if (!selectedElement) return;
+      if (fontStyleSelect.value === 'handwritten') {
+        selectedElement.classList.add('handwritten');
+      } else {
+        selectedElement.classList.remove('handwritten');
+      }
+      saveBoard();
+    };
+
+    addNoteBtn.addEventListener('click', () => createElement('sticky', 80, 80));
+    addTextBtn.addEventListener('click', () => createElement('textbox', 120, 120));
+
+    exportPdfBtn.addEventListener('click', () => {
+      setSelected(null);
+      window.print();
+    });
+
+    clearBoardBtn.addEventListener('click', () => {
+      board.innerHTML = '';
+      saveBoard();
+    });
+
+    board.addEventListener('click', handleBoardClick);
+
+    textColorInput.addEventListener('input', applyTextColor);
+    highlightInput.addEventListener('input', applyHighlight);
+    fontStyleSelect.addEventListener('change', applyFontStyle);
+
+    boardColorInput.addEventListener('input', () => {
+      board.style.backgroundColor = boardColorInput.value;
+      saveBoard();
+    });
+
+    imageUpload.addEventListener('change', (event) => {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        const img = document.createElement('img');
+        img.src = reader.result;
+        img.className = 'board-image draggable';
+        img.style.left = '140px';
+        img.style.top = '140px';
+        img.dataset.type = 'image';
+        board.appendChild(img);
+        makeDraggable(img);
+        setSelected(img);
+        saveBoard();
+      };
+      reader.readAsDataURL(file);
+      event.target.value = '';
+    });
+
+    document.querySelectorAll('.draggable-item').forEach(item => {
+      item.addEventListener('dragstart', (event) => {
+        event.dataTransfer.setData('text/plain', event.target.dataset.type);
       });
     });
 
-    // Prevent pointer from staying 'active' forever if wallpaper tool doesn't send leave.
-    let lastPointerMove = Date.now();
-    setInterval(()=> {
-      if (pointer.active && (Date.now() - lastPointerMove) > 2400) {
-        clearPointer();
-      }
-    }, 800);
+    board.addEventListener('dragover', (event) => {
+      event.preventDefault();
+    });
 
-    window.addEventListener('mousemove', ()=> { lastPointerMove = Date.now(); }, { passive:true });
-    window.addEventListener('touchmove', ()=> { lastPointerMove = Date.now(); }, { passive:true });
+    board.addEventListener('drop', (event) => {
+      event.preventDefault();
+      const type = event.dataTransfer.getData('text/plain');
+      const boardRect = board.getBoundingClientRect();
+      const x = event.clientX - boardRect.left;
+      const y = event.clientY - boardRect.top;
+      createElement(type, x, y);
+    });
 
-  })();
+    board.addEventListener('input', () => {
+      saveBoard();
+    });
+
+    loadBoard();
   </script>
 </body>
 </html>
